@@ -351,7 +351,7 @@ function handleBuildSettings (platformConfig, locations, infoPlist) {
 
     if (swiftVersion) {
         events.emit('verbose', `Set SwiftVersion to "${swiftVersion}".`);
-        updateBuildPropertyLocal(proj, displayName, 'SWIFT_VERSION', swiftVersion);
+        updateBuildPropertyLocal(project, displayName, 'SWIFT_VERSION', swiftVersion);
 
 //        project.xcode.updateBuildProperty('SWIFT_VERSION', swiftVersion);
     }
