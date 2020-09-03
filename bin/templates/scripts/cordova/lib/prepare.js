@@ -269,15 +269,15 @@ function handleOrientationSettings (platformConfig, infoPlist) {
 function updateBuildPropertyLocal (proj, displayName, prop, value, build) {
     try {
         // Check if we have a valid target - during prepare we do not have it
-        let target = proj.pbxTargetByName(displayName);
+        let target = proj.xcode.pbxTargetByName(displayName);
         if (target == null || target.buildConfigurationList == null) {
-            proj.updateBuildProperty(prop, value, build);
+            proj.xcode.updateBuildProperty(prop, value, build);
         } else {
             let targetProjectBuildReference = target.buildConfigurationList;
             // Collect the uuid's from the configuration of our target
             let COMMENT_KEY = /_comment$/;
             let validConfigs = [];
-            let configList = proj.pbxXCConfigurationList();
+            let configList = proj.xcode.pbxXCConfigurationList();
             for (let configName in configList) {
                 if (!COMMENT_KEY.test(configName) && targetProjectBuildReference === configName) {
                     let buildVariants = configList[configName].buildConfigurations;
@@ -288,7 +288,7 @@ function updateBuildPropertyLocal (proj, displayName, prop, value, build) {
                 }
             }
             // Only update target props
-            let configs = proj.pbxXCBuildConfigurationSection();
+            let configs = proj.xcode.pbxXCBuildConfigurationSection();
             for (configName in configs) {
                 if (!COMMENT_KEY.test(configName)) {
                     if (validConfigs.indexOf(configName) === -1) {
@@ -302,7 +302,7 @@ function updateBuildPropertyLocal (proj, displayName, prop, value, build) {
             }
         }
     } catch (e) { // fallback to default behavior on error
-        proj.updateBuildProperty(prop, value, build);
+        proj.xcode.updateBuildProperty(prop, value, build);
     }
 }
 
