@@ -22,37 +22,31 @@
 // environment bits that allow for interacting with iOS Simulators. On
 // Windows+Linux we are bound to not-have-that.
 if (process.platform === 'darwin') {
-    var run = require('../../../../bin/templates/scripts/cordova/lib/run');
-    var Q = require('q');
+    const run = require('../../../../bin/templates/scripts/cordova/lib/run');
 
-    describe('cordova/lib/run', function () {
-        describe('--list option', function () {
-            var deferred;
-            beforeEach(function () {
-                deferred = Q.defer();
-                deferred.resolve();
-                spyOn(run, 'listDevices').and.returnValue(deferred.promise);
-                spyOn(run, 'listEmulators').and.returnValue(deferred.promise);
+    describe('cordova/lib/run', () => {
+        describe('--list option', () => {
+            beforeEach(() => {
+                spyOn(run, 'listDevices').and.returnValue(Promise.resolve());
+                spyOn(run, 'listEmulators').and.returnValue(Promise.resolve());
             });
-            it('should delegate to listDevices method if `options.device` specified', function () {
-                run.run({ list: true, device: true });
-                expect(run.listDevices).toHaveBeenCalled();
-                expect(run.listEmulators).not.toHaveBeenCalled();
+            it('should delegate to listDevices method if `options.device` specified', () => {
+                return run.run({ list: true, device: true }).then(() => {
+                    expect(run.listDevices).toHaveBeenCalled();
+                    expect(run.listEmulators).not.toHaveBeenCalled();
+                });
             });
-            it('should delegate to listEmulators method if `options.device` specified', function () {
-                run.run({ list: true, emulator: true });
-                expect(run.listDevices).not.toHaveBeenCalled();
-                expect(run.listEmulators).toHaveBeenCalled();
+            it('should delegate to listEmulators method if `options.device` specified', () => {
+                return run.run({ list: true, emulator: true }).then(() => {
+                    expect(run.listDevices).not.toHaveBeenCalled();
+                    expect(run.listEmulators).toHaveBeenCalled();
+                });
             });
-            it('should delegate to to both listEmulators and listDevices methods if neither `options.device` nor `options.emulator` are specified', function (done) {
-                run.run({ list: true })
-                    .then(function () {
-                        expect(run.listDevices).toHaveBeenCalled();
-                        expect(run.listEmulators).toHaveBeenCalled();
-                    }).fail(function (err) {
-                        fail('run fail handler unexpectedly invoked');
-                        console.error(err);
-                    }).done(done);
+            it('should delegate to both listEmulators and listDevices methods if neither `options.device` nor `options.emulator` are specified', () => {
+                return run.run({ list: true }).then(() => {
+                    expect(run.listDevices).toHaveBeenCalled();
+                    expect(run.listEmulators).toHaveBeenCalled();
+                });
             });
         });
     });

@@ -17,93 +17,93 @@
  under the License.
  */
 
-var shell = require('shelljs');
-var spec = __dirname;
-var path = require('path');
-var util = require('util');
+const spec = __dirname;
+const path = require('path');
+const fs = require('fs-extra');
+const { superspawn } = require('cordova-common');
 
-var cordova_bin = path.join(spec, '../..', 'bin');
-var tmp = require('tmp').dirSync().name;
+const cordova_bin = path.join(spec, '../..', 'bin');
+const tmp = require('tmp').dirSync().name;
 
 function createAndBuild (projectname, projectid) {
-    var return_code = 0;
-    var command;
+    const projectTempDir = path.join(`${tmp}/${projectname}`);
+    const createBin = path.join(`${cordova_bin}/create`);
+    const buildBin = path.join(`${projectTempDir}/cordova/build`);
 
-    // remove existing folder
-    command = path.join(tmp, projectname);
-    shell.rm('-rf', command);
+    // Remove any pre-existing temp projects
+    fs.removeSync(projectTempDir);
 
-    // create the project
-    command = util.format('"%s/create" "%s/%s" %s "%s"', cordova_bin, tmp, projectname, projectid, projectname);
-    shell.echo(command);
-    return_code = shell.exec(command).code;
-    expect(return_code).toBe(0);
+    return superspawn.spawn(createBin, [projectTempDir, projectid, projectname], { printCommand: true }).then(
+        () => {
+            expect(true).toBe(true); // It is expected that create is successful
 
-    // build the project
-    command = util.format('"%s/cordova/build" --emulator', path.join(tmp, projectname));
-    shell.echo(command);
-    return_code = shell.exec(command, { silent: true }).code;
-    expect(return_code).toBe(0);
-
-    // clean-up
-    command = path.join(tmp, projectname);
-    shell.rm('-rf', command);
+            return superspawn.spawn(buildBin, ['--emulator'], { printCommand: true }).then(
+                () => {
+                    expect(true).toBe(true); // It is expected that build is successful
+                },
+                () => fail('Project Build has failed and is not expected.')
+            );
+        },
+        () => fail('Project create has failed and is not expected.')
+    ).finally(() => {
+        // Delete Temp Project
+        fs.removeSync(projectTempDir);
+    });
 }
 
-describe('create', function () {
-
-    it('Test#001 : create project with ascii name, no spaces', function () {
-        var projectname = 'testcreate';
-        var projectid = 'com.test.app1';
-
-        createAndBuild(projectname, projectid);
-    });
-
-    it('Test#002 : create project with ascii name, and spaces', function () {
-        var projectname = 'test create';
-        var projectid = 'com.test.app2';
+describe('create', () => {
+    it('Test#001 : create project with ascii name, no spaces', () => {
+        const projectname = 'testcreate';
+        const projectid = 'com.test.app1';
 
         createAndBuild(projectname, projectid);
     });
 
-    it('Test#003 : create project with unicode name, no spaces', function () {
-        var projectname = '応応応応用用用用';
-        var projectid = 'com.test.app3';
+    it('Test#002 : create project with ascii name, and spaces', () => {
+        const projectname = 'test create';
+        const projectid = 'com.test.app2';
 
         createAndBuild(projectname, projectid);
     });
 
-    it('Test#004 : create project with unicode name 2, no spaces', function () {
-        var projectname = 'إثرا';
-        var projectid = 'com.test.app3.2';
+    it('Test#003 : create project with unicode name, no spaces', () => {
+        const projectname = '応応応応用用用用';
+        const projectid = 'com.test.app3';
 
         createAndBuild(projectname, projectid);
     });
 
-    it('Test#005 : create project with unicode name, and spaces', function () {
-        var projectname = '応応応応 用用用用';
-        var projectid = 'com.test.app4';
+    it('Test#004 : create project with unicode name 2, no spaces', () => {
+        const projectname = 'إثرا';
+        const projectid = 'com.test.app3.2';
 
         createAndBuild(projectname, projectid);
     });
 
-    it('Test#006 : create project with ascii+unicode name, no spaces', function () {
-        var projectname = '応応応応hello用用用用';
-        var projectid = 'com.test.app5';
+    it('Test#005 : create project with unicode name, and spaces', () => {
+        const projectname = '応応応応 用用用用';
+        const projectid = 'com.test.app4';
 
         createAndBuild(projectname, projectid);
     });
 
-    it('Test#007 : create project with ascii+unicode name, and spaces', function () {
-        var projectname = '応応応応 hello 用用用用';
-        var projectid = 'com.test.app6';
+    it('Test#006 : create project with ascii+unicode name, no spaces', () => {
+        const projectname = '応応応応hello用用用用';
+        const projectid = 'com.test.app5';
 
         createAndBuild(projectname, projectid);
     });
 
-    it('Test#008 : create project with ascii name, and spaces, ampersand(&)', function () {
-        var projectname = 'hello & world';
-        var projectid = 'com.test.app7';
+    it('Test#007 : create project with ascii+unicode name, and spaces', () => {
+        const projectname = '応応応応 hello 用用用用';
+        const projectid = 'com.test.app6';
+
+        createAndBuild(projectname, projectid);
+    });
+
+    it('Test#008 : create project with ascii name, and spaces, ampersand(&)', () => {
+        const projectname = 'hello & world';
+        const projectid = 'com.test.app7';
 
         createAndBuild(projectname, projectid);
     });

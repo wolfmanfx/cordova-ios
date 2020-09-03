@@ -17,49 +17,43 @@
  under the License.
  */
 
-var rewire = require('rewire');
-var versions = rewire('../../../bin/templates/scripts/cordova/lib/versions');
+const rewire = require('rewire');
+const versions = rewire('../../../bin/templates/scripts/cordova/lib/versions');
 
 // These tests can not run on windows.
 if (process.platform === 'darwin') {
-    describe('versions', function () {
+    describe('versions', () => {
         describe('get_tool_version method', () => {
-            it('should not have found tool by name.', (done) => {
-                versions.get_tool_version('unknown')
-                    .then(() => done.fail('expected promise rejection'))
-                    .catch((error) => {
-                        expect(error).toContain('is not valid tool name');
-                        done();
-                    });
-            });
+            it('should not have found tool by name.', () => {
+                return versions.get_tool_version('unknown').then(
+                    () => fail('expected promise rejection'),
+                    error => expect(error.message).toContain('is not valid tool name')
+                );
+            }, 10000);
 
-            it('should find xcodebuild version.', (done) => {
-                versions.get_tool_version('xcodebuild').then((version) => {
+            it('should find xcodebuild version.', () => {
+                return versions.get_tool_version('xcodebuild').then((version) => {
                     expect(version).not.toBe(undefined);
-                    done();
-                }).catch(() => done.fail('expected promise resolution'));
-            });
+                });
+            }, 10000);
 
-            it('should find ios-sim version.', (done) => {
-                versions.get_tool_version('ios-sim').then((version) => {
+            it('should find ios-sim version.', () => {
+                return versions.get_tool_version('ios-sim').then((version) => {
                     expect(version).not.toBe(undefined);
-                    done();
-                }).catch(() => done.fail('expected promise resolution'));
-            });
+                });
+            }, 10000);
 
-            it('should find ios-deploy version.', (done) => {
-                versions.get_tool_version('ios-deploy').then((version) => {
+            it('should find ios-deploy version.', () => {
+                return versions.get_tool_version('ios-deploy').then((version) => {
                     expect(version).not.toBe(undefined);
-                    done();
-                }).catch(() => done.fail('expected promise resolution'));
-            });
+                });
+            }, 10000);
 
-            it('should find pod version.', (done) => {
-                versions.get_tool_version('pod').then((version) => {
+            it('should find pod version.', () => {
+                return versions.get_tool_version('pod').then((version) => {
                     expect(version).not.toBe(undefined);
-                    done();
-                }).catch(() => done.fail('expected promise resolution'));
-            });
+                });
+            }, 10000);
         });
     });
 }

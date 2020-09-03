@@ -17,30 +17,31 @@
        under the License.
 */
 
-var list_devices = require('../../../../bin/templates/scripts/cordova/lib/list-devices');
-var Q = require('q');
+const fs = require('fs-extra');
+const path = require('path');
+const rewire = require('rewire');
 
-describe('cordova/lib/list-devices', function () {
-    describe('run method', function () {
-        beforeEach(function () {
-            spyOn(Q, 'all').and.returnValue(Q.resolve([]));
-            spyOn(Q, 'nfcall');
+const list_devices = rewire('../../../../bin/templates/scripts/cordova/lib/listDevices');
+
+const sampleData = fs.readFileSync(path.resolve(__dirname, '../fixtures/sample-ioreg-output.txt'), 'utf-8');
+
+describe('cordova/lib/listDevices', () => {
+    describe('run method', () => {
+        let spawnSpy;
+
+        beforeEach(() => {
+            spawnSpy = jasmine.createSpy('spawn').and.returnValue(Promise.resolve(sampleData));
+            list_devices.__set__('spawn', spawnSpy);
         });
-        it('should invoke proper system calls to retrieve connected devices', function () {
+
+        it('should trim and split standard output and return as array', () => {
             return list_devices.run()
-                .then(() => {
-                    expect(Q.nfcall).toHaveBeenCalledWith(jasmine.any(Function), jasmine.stringMatching(/ioreg.*iPad/g));
-                    expect(Q.nfcall).toHaveBeenCalledWith(jasmine.any(Function), jasmine.stringMatching(/ioreg.*iPod/g));
-                    expect(Q.nfcall).toHaveBeenCalledWith(jasmine.any(Function), jasmine.stringMatching(/ioreg.*iPhone/g));
-                });
-        });
-        it('should trim and split standard output and return as array', function () {
-            Q.all.and.returnValue(Q.resolve([['   this is\nmy sweet\nstdout\n    ']]));
-            return list_devices.run()
-                .then(function (results) {
-                    expect(results).toContain('this is');
-                    expect(results).toContain('my sweet');
-                    expect(results).toContain('stdout');
+                .then(results => {
+                    expect(spawnSpy).toHaveBeenCalledWith('ioreg', ['-p', 'IOUSB', '-l']);
+                    expect(results).toEqual([
+                        'THE_IPHONE_SERIAL iPhone',
+                        'THE_IPAD_SERIAL iPad'
+                    ]);
                 });
         });
     });

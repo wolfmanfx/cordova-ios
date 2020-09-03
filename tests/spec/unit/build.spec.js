@@ -17,32 +17,24 @@
  under the License.
  */
 
-var path = require('path');
-var rewire = require('rewire');
-var build = rewire('../../../bin/templates/scripts/cordova/lib/build');
+const path = require('path');
+const fs = require('fs-extra');
+const rewire = require('rewire');
+const { CordovaError, events } = require('cordova-common');
+const build = rewire('../../../bin/templates/scripts/cordova/lib/build');
 
-describe('build', function () {
-    let emitSpy;
-    var testProjectPath = path.join('/test', 'project', 'path');
+describe('build', () => {
+    const testProjectPath = path.join('/test', 'project', 'path');
 
-    beforeEach(function () {
-        // Events spy
-        emitSpy = jasmine.createSpy('emitSpy');
-        build.__set__('events', {
-            emit: emitSpy
-        });
-    });
-
-    describe('getXcodeBuildArgs method', function () {
-
-        var getXcodeBuildArgs = build.__get__('getXcodeBuildArgs');
+    describe('getXcodeBuildArgs method', () => {
+        const getXcodeBuildArgs = build.__get__('getXcodeBuildArgs');
         build.__set__('__dirname', path.join('/test', 'dir'));
 
-        it('should generate appropriate args if a single buildFlag is passed in', function (done) {
-            var isDevice = true;
-            var buildFlags = '';
+        it('should generate appropriate args if a single buildFlag is passed in', () => {
+            const isDevice = true;
+            const buildFlags = '';
 
-            var args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, buildFlags);
+            const args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, buildFlags);
             expect(args).toEqual([
                 '-workspace',
                 'TestProjectName.xcworkspace',
@@ -55,16 +47,15 @@ describe('build', function () {
                 '-archivePath',
                 'TestProjectName.xcarchive',
                 'archive',
-                'CONFIGURATION_BUILD_DIR=' + path.join(testProjectPath, 'build', 'device'),
-                'SHARED_PRECOMPS_DIR=' + path.join(testProjectPath, 'build', 'sharedpch')
+                `CONFIGURATION_BUILD_DIR=${path.join(testProjectPath, 'build', 'device')}`,
+                `SHARED_PRECOMPS_DIR=${path.join(testProjectPath, 'build', 'sharedpch')}`
             ]);
             expect(args.length).toEqual(13);
-            done();
         });
 
-        it('should generate appropriate args if buildFlags are passed in', function (done) {
-            var isDevice = true;
-            var buildFlags = [
+        it('should generate appropriate args if buildFlags are passed in', () => {
+            const isDevice = true;
+            const buildFlags = [
                 '-workspace TestWorkspaceFlag',
                 '-scheme TestSchemeFlag',
                 '-configuration TestConfigurationFlag',
@@ -74,7 +65,7 @@ describe('build', function () {
                 'SHARED_PRECOMPS_DIR=TestSharedPrecompsDirFlag'
             ];
 
-            var args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, buildFlags);
+            const args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, buildFlags);
             expect(args).toEqual([
                 '-workspace',
                 'TestWorkspaceFlag',
@@ -91,12 +82,11 @@ describe('build', function () {
                 'SHARED_PRECOMPS_DIR=TestSharedPrecompsDirFlag'
             ]);
             expect(args.length).toEqual(13);
-            done();
         });
 
-        it('should generate appropriate args for device', function (done) {
-            var isDevice = true;
-            var args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, null);
+        it('should generate appropriate args for device', () => {
+            const isDevice = true;
+            const args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, null);
             expect(args).toEqual([
                 '-workspace',
                 'TestProjectName.xcworkspace',
@@ -109,16 +99,15 @@ describe('build', function () {
                 '-archivePath',
                 'TestProjectName.xcarchive',
                 'archive',
-                'CONFIGURATION_BUILD_DIR=' + path.join(testProjectPath, 'build', 'device'),
-                'SHARED_PRECOMPS_DIR=' + path.join(testProjectPath, 'build', 'sharedpch')
+                `CONFIGURATION_BUILD_DIR=${path.join(testProjectPath, 'build', 'device')}`,
+                `SHARED_PRECOMPS_DIR=${path.join(testProjectPath, 'build', 'sharedpch')}`
             ]);
             expect(args.length).toEqual(13);
-            done();
         });
 
-        it('should generate appropriate args for simulator', function (done) {
-            var isDevice = false;
-            var args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, null, 'iPhone 5s');
+        it('should generate appropriate args for simulator', () => {
+            const isDevice = false;
+            const args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, null, 'iPhone 5s');
             expect(args).toEqual([
                 '-workspace',
                 'TestProjectName.xcworkspace',
@@ -131,18 +120,17 @@ describe('build', function () {
                 '-destination',
                 'platform=iOS Simulator,name=iPhone 5s',
                 'build',
-                'CONFIGURATION_BUILD_DIR=' + path.join(testProjectPath, 'build', 'emulator'),
-                'SHARED_PRECOMPS_DIR=' + path.join(testProjectPath, 'build', 'sharedpch')
+                `CONFIGURATION_BUILD_DIR=${path.join(testProjectPath, 'build', 'emulator')}`,
+                `SHARED_PRECOMPS_DIR=${path.join(testProjectPath, 'build', 'sharedpch')}`
             ]);
             expect(args.length).toEqual(13);
-            done();
         });
 
-        it('should add matched flags that are not overriding for device', function (done) {
-            var isDevice = true;
-            var buildFlags = '-sdk TestSdkFlag';
+        it('should add matched flags that are not overriding for device', () => {
+            const isDevice = true;
+            const buildFlags = '-sdk TestSdkFlag';
 
-            var args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, buildFlags);
+            const args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, buildFlags);
             expect(args).toEqual([
                 '-workspace',
                 'TestProjectName.xcworkspace',
@@ -155,20 +143,19 @@ describe('build', function () {
                 '-archivePath',
                 'TestProjectName.xcarchive',
                 'archive',
-                'CONFIGURATION_BUILD_DIR=' + path.join(testProjectPath, 'build', 'device'),
-                'SHARED_PRECOMPS_DIR=' + path.join(testProjectPath, 'build', 'sharedpch'),
+                `CONFIGURATION_BUILD_DIR=${path.join(testProjectPath, 'build', 'device')}`,
+                `SHARED_PRECOMPS_DIR=${path.join(testProjectPath, 'build', 'sharedpch')}`,
                 '-sdk',
                 'TestSdkFlag'
             ]);
             expect(args.length).toEqual(15);
-            done();
         });
 
-        it('should add matched flags that are not overriding for simulator', function (done) {
-            var isDevice = false;
-            var buildFlags = '-archivePath TestArchivePathFlag';
+        it('should add matched flags that are not overriding for simulator', () => {
+            const isDevice = false;
+            const buildFlags = '-archivePath TestArchivePathFlag';
 
-            var args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, buildFlags, 'iPhone 5s');
+            const args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, buildFlags, 'iPhone 5s');
             expect(args).toEqual([
                 '-workspace',
                 'TestProjectName.xcworkspace',
@@ -181,18 +168,17 @@ describe('build', function () {
                 '-destination',
                 'platform=iOS Simulator,name=iPhone 5s',
                 'build',
-                'CONFIGURATION_BUILD_DIR=' + path.join(testProjectPath, 'build', 'emulator'),
-                'SHARED_PRECOMPS_DIR=' + path.join(testProjectPath, 'build', 'sharedpch'),
+                `CONFIGURATION_BUILD_DIR=${path.join(testProjectPath, 'build', 'emulator')}`,
+                `SHARED_PRECOMPS_DIR=${path.join(testProjectPath, 'build', 'sharedpch')}`,
                 '-archivePath',
                 'TestArchivePathFlag'
             ]);
             expect(args.length).toEqual(15);
-            done();
         });
 
-        it('should generate appropriate args for automatic provisioning', function (done) {
-            var isDevice = true;
-            var args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, null, null, true);
+        it('should generate appropriate args for automatic provisioning', () => {
+            const isDevice = true;
+            const args = getXcodeBuildArgs('TestProjectName', testProjectPath, 'TestConfiguration', isDevice, null, null, true);
             expect(args).toEqual([
                 '-workspace',
                 'TestProjectName.xcworkspace',
@@ -206,20 +192,18 @@ describe('build', function () {
                 'TestProjectName.xcarchive',
                 '-allowProvisioningUpdates',
                 'archive',
-                'CONFIGURATION_BUILD_DIR=' + path.join(testProjectPath, 'build', 'device'),
-                'SHARED_PRECOMPS_DIR=' + path.join(testProjectPath, 'build', 'sharedpch')
+                `CONFIGURATION_BUILD_DIR=${path.join(testProjectPath, 'build', 'device')}`,
+                `SHARED_PRECOMPS_DIR=${path.join(testProjectPath, 'build', 'sharedpch')}`
             ]);
             expect(args.length).toEqual(14);
-            done();
         });
     });
 
-    describe('getXcodeArchiveArgs method', function () {
+    describe('getXcodeArchiveArgs method', () => {
+        const getXcodeArchiveArgs = build.__get__('getXcodeArchiveArgs');
 
-        var getXcodeArchiveArgs = build.__get__('getXcodeArchiveArgs');
-
-        it('should generate the appropriate arguments', function (done) {
-            var archiveArgs = getXcodeArchiveArgs('TestProjectName', testProjectPath, '/test/output/path', '/test/export/options/path');
+        it('should generate the appropriate arguments', () => {
+            const archiveArgs = getXcodeArchiveArgs('TestProjectName', testProjectPath, '/test/output/path', '/test/export/options/path');
             expect(archiveArgs[0]).toEqual('-exportArchive');
             expect(archiveArgs[1]).toEqual('-archivePath');
             expect(archiveArgs[2]).toEqual('TestProjectName.xcarchive');
@@ -228,11 +212,10 @@ describe('build', function () {
             expect(archiveArgs[5]).toEqual('-exportPath');
             expect(archiveArgs[6]).toEqual('/test/output/path');
             expect(archiveArgs.length).toEqual(7);
-            done();
         });
 
-        it('should generate the appropriate arguments for automatic provisioning', function (done) {
-            var archiveArgs = getXcodeArchiveArgs('TestProjectName', testProjectPath, '/test/output/path', '/test/export/options/path', true);
+        it('should generate the appropriate arguments for automatic provisioning', () => {
+            const archiveArgs = getXcodeArchiveArgs('TestProjectName', testProjectPath, '/test/output/path', '/test/export/options/path', true);
             expect(archiveArgs[0]).toEqual('-exportArchive');
             expect(archiveArgs[1]).toEqual('-archivePath');
             expect(archiveArgs[2]).toEqual('TestProjectName.xcarchive');
@@ -242,125 +225,105 @@ describe('build', function () {
             expect(archiveArgs[6]).toEqual('/test/output/path');
             expect(archiveArgs[7]).toEqual('-allowProvisioningUpdates');
             expect(archiveArgs.length).toEqual(8);
-            done();
         });
     });
 
-    describe('parseBuildFlag method', function () {
+    describe('parseBuildFlag method', () => {
+        const parseBuildFlag = build.__get__('parseBuildFlag');
 
-        var parseBuildFlag = build.__get__('parseBuildFlag');
-
-        it('should detect a workspace change', function (done) {
-            var buildFlag = '-workspace MyTestWorkspace';
-            var args = { 'otherFlags': [] };
+        it('should detect a workspace change', () => {
+            const buildFlag = '-workspace MyTestWorkspace';
+            const args = { otherFlags: [] };
             parseBuildFlag(buildFlag, args);
             expect(args.workspace).toEqual('MyTestWorkspace');
             expect(args.otherFlags.length).toEqual(0);
-            done();
         });
-        it('should detect a scheme change', function (done) {
-            var buildFlag = '-scheme MyTestScheme';
-            var args = { 'otherFlags': [] };
+        it('should detect a scheme change', () => {
+            const buildFlag = '-scheme MyTestScheme';
+            const args = { otherFlags: [] };
             parseBuildFlag(buildFlag, args);
             expect(args.scheme).toEqual('MyTestScheme');
             expect(args.otherFlags.length).toEqual(0);
-            done();
         });
-        it('should detect a configuration change', function (done) {
-            var buildFlag = '-configuration MyTestConfiguration';
-            var args = { 'otherFlags': [] };
+        it('should detect a configuration change', () => {
+            const buildFlag = '-configuration MyTestConfiguration';
+            const args = { otherFlags: [] };
             parseBuildFlag(buildFlag, args);
             expect(args.configuration).toEqual('MyTestConfiguration');
             expect(args.otherFlags.length).toEqual(0);
-            done();
         });
-        it('should detect an sdk change', function (done) {
-            var buildFlag = '-sdk NotARealSDK';
-            var args = { 'otherFlags': [] };
+        it('should detect an sdk change', () => {
+            const buildFlag = '-sdk NotARealSDK';
+            const args = { otherFlags: [] };
             parseBuildFlag(buildFlag, args);
             expect(args.sdk).toEqual('NotARealSDK');
             expect(args.otherFlags.length).toEqual(0);
-            done();
         });
-        it('should detect a destination change', function (done) {
-            var buildFlag = '-destination MyTestDestination';
-            var args = { 'otherFlags': [] };
+        it('should detect a destination change', () => {
+            const buildFlag = '-destination MyTestDestination';
+            const args = { otherFlags: [] };
             parseBuildFlag(buildFlag, args);
             expect(args.destination).toEqual('MyTestDestination');
             expect(args.otherFlags.length).toEqual(0);
-            done();
         });
-        it('should detect an archivePath change', function (done) {
-            var buildFlag = '-archivePath MyTestArchivePath';
-            var args = { 'otherFlags': [] };
+        it('should detect an archivePath change', () => {
+            const buildFlag = '-archivePath MyTestArchivePath';
+            const args = { otherFlags: [] };
             parseBuildFlag(buildFlag, args);
             expect(args.archivePath).toEqual('MyTestArchivePath');
             expect(args.otherFlags.length).toEqual(0);
-            done();
         });
-        it('should detect a configuration_build_dir change', function (done) {
-            var buildFlag = 'CONFIGURATION_BUILD_DIR=/path/to/fake/config/build/dir';
-            var args = { 'otherFlags': [] };
+        it('should detect a configuration_build_dir change', () => {
+            const buildFlag = 'CONFIGURATION_BUILD_DIR=/path/to/fake/config/build/dir';
+            const args = { otherFlags: [] };
             parseBuildFlag(buildFlag, args);
             expect(args.configuration_build_dir).toEqual('CONFIGURATION_BUILD_DIR=/path/to/fake/config/build/dir');
             expect(args.otherFlags.length).toEqual(0);
-            done();
         });
-        it('should detect a shared_precomps_dir change', function (done) {
-            var buildFlag = 'SHARED_PRECOMPS_DIR=/path/to/fake/shared/precomps/dir';
-            var args = { 'otherFlags': [] };
+        it('should detect a shared_precomps_dir change', () => {
+            const buildFlag = 'SHARED_PRECOMPS_DIR=/path/to/fake/shared/precomps/dir';
+            const args = { otherFlags: [] };
             parseBuildFlag(buildFlag, args);
             expect(args.shared_precomps_dir).toEqual('SHARED_PRECOMPS_DIR=/path/to/fake/shared/precomps/dir');
             expect(args.otherFlags.length).toEqual(0);
-            done();
         });
-        it('should parse arbitrary build settings', function (done) {
-            var buildFlag = 'MY_ARBITRARY_BUILD_SETTING=ValueOfArbitraryBuildSetting';
-            var args = { 'otherFlags': [] };
+        it('should parse arbitrary build settings', () => {
+            const buildFlag = 'MY_ARBITRARY_BUILD_SETTING=ValueOfArbitraryBuildSetting';
+            const args = { otherFlags: [] };
             parseBuildFlag(buildFlag, args);
             expect(args.otherFlags[0]).toEqual('MY_ARBITRARY_BUILD_SETTING=ValueOfArbitraryBuildSetting');
             expect(args.otherFlags.length).toEqual(1);
-            done();
         });
-        it('should parse userdefaults', function (done) {
-            var buildFlag = '-myuserdefault=TestUserDefaultValue';
-            var args = { 'otherFlags': [] };
+        it('should parse userdefaults', () => {
+            const buildFlag = '-myuserdefault=TestUserDefaultValue';
+            const args = { otherFlags: [] };
             parseBuildFlag(buildFlag, args);
             expect(args.otherFlags[0]).toEqual('-myuserdefault=TestUserDefaultValue');
             expect(args.otherFlags.length).toEqual(1);
-            done();
         });
-        it('should parse settings with a space', function (done) {
-            var buildFlag = '-anotherxcodebuildsetting withASpace';
-            var args = { 'otherFlags': [] };
+        it('should parse settings with a space', () => {
+            const buildFlag = '-anotherxcodebuildsetting withASpace';
+            const args = { otherFlags: [] };
             parseBuildFlag(buildFlag, args);
             expect(args.otherFlags[0]).toEqual('-anotherxcodebuildsetting');
             expect(args.otherFlags[1]).toEqual('withASpace');
             expect(args.otherFlags.length).toEqual(2);
-            done();
         });
     });
 
     describe('help method', () => {
         it('should log a bunch of options', () => {
-            const logSpy = jasmine.createSpy();
-            const procStub = { exit: _ => null, cwd: _ => '', argv: ['', ''] };
-            build.__set__({ console: { log: logSpy }, process: procStub });
+            spyOn(console, 'log');
+            spyOn(process, 'exit');
 
             build.help();
-            expect(logSpy).toHaveBeenCalledWith(jasmine.stringMatching(/^Usage:/));
+            expect(console.log).toHaveBeenCalledWith(jasmine.stringMatching(/^Usage:/));
         });
     });
 
     describe('run method', () => {
-        let rejectSpy;
-
         beforeEach(() => {
-            rejectSpy = jasmine.createSpy('reject');
-
-            build.__set__('Q', {
-                reject: rejectSpy
-            });
+            spyOn(Promise, 'reject');
         });
 
         it('should not accept debug and release options together', () => {
@@ -369,7 +332,7 @@ describe('build', function () {
                 release: true
             });
 
-            expect(rejectSpy).toHaveBeenCalledWith('Cannot specify "debug" and "release" options together.');
+            expect(Promise.reject).toHaveBeenCalledWith(new CordovaError('Cannot specify "debug" and "release" options together.'));
         });
 
         it('should not accept device and emulator options together', () => {
@@ -378,25 +341,21 @@ describe('build', function () {
                 emulator: true
             });
 
-            expect(rejectSpy).toHaveBeenCalledWith('Cannot specify "device" and "emulator" options together.');
+            expect(Promise.reject).toHaveBeenCalledWith(new CordovaError('Cannot specify "device" and "emulator" options together.'));
         });
 
         it('should reject when build config file missing', () => {
-            const existsSyncSpy = jasmine.createSpy('existsSync').and.returnValue(false);
-            build.__set__('fs', {
-                existsSync: existsSyncSpy
-            });
+            spyOn(fs, 'existsSync').and.returnValue(false);
 
-            build.run({
-                buildConfig: './some/config/path'
-            });
+            const buildConfig = './some/config/path';
+            build.run({ buildConfig: './some/config/path' });
 
-            expect(rejectSpy).toHaveBeenCalledWith(jasmine.stringMatching(/^Build config file does not exist:/));
+            expect(Promise.reject).toHaveBeenCalledWith(new CordovaError(`Build config file does not exist: ${buildConfig}`));
         });
     });
 
     describe('getDefaultSimulatorTarget method', () => {
-        it('should find iPhone X as the default simulator target.', (done) => {
+        it('should find iPhone X as the default simulator target.', () => {
             const mockedEmulators = [{
                 name: 'iPhone 7',
                 identifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-7',
@@ -414,93 +373,60 @@ describe('build', function () {
             }];
 
             // This method will require a module that supports the run method.
-            build.__set__('require', () => {
-                return {
-                    run: () => {
-                        return new Promise((resolve, reject) => {
-                            resolve(mockedEmulators);
-                        });
-                    }
-                };
-            });
+            build.__set__('require', () => ({
+                run: () => Promise.resolve(mockedEmulators)
+            }));
 
             const getDefaultSimulatorTarget = build.__get__('getDefaultSimulatorTarget');
-            const exec = getDefaultSimulatorTarget();
 
-            const expected = {
-                name: 'iPhone X',
-                identifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-X',
-                simIdentifier: 'iPhone-X'
-            };
-
-            exec.then((actual) => {
-                expect(actual).toEqual(expected);
-                done();
+            return getDefaultSimulatorTarget().then(actual => {
+                expect(actual).toEqual({
+                    name: 'iPhone X',
+                    identifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-X',
+                    simIdentifier: 'iPhone-X'
+                });
             });
         });
     });
 
     describe('findXCodeProjectIn method', () => {
-        let findXCodeProjectIn;
-        let shellLsSpy;
-        let rejectSpy;
-        let resolveSpy;
         const fakePath = '/path/foobar';
+        let buildRequire;
 
         beforeEach(() => {
-            findXCodeProjectIn = build.__get__('findXCodeProjectIn');
-
-            // Shell Spy
-            shellLsSpy = jasmine.createSpy('shellLsSpy');
-            build.__set__('shell', {
-                ls: shellLsSpy
-            });
-
-            // Q Spy
-            rejectSpy = jasmine.createSpy('rejectSpy');
-            resolveSpy = jasmine.createSpy('resolveSpy');
-            build.__set__('Q', {
-                reject: rejectSpy,
-                resolve: resolveSpy
-            });
+            // rewire causes some issues so for these tests, we will require instead.
+            buildRequire = require('../../../bin/templates/scripts/cordova/lib/build');
+            spyOn(events, 'emit');
         });
 
         it('should find not find Xcode project', () => {
-            shellLsSpy.and.returnValue(['README.md']);
-
-            findXCodeProjectIn(fakePath);
-
-            expect(rejectSpy).toHaveBeenCalledWith('No Xcode project found in ' + fakePath);
+            spyOn(fs, 'readdirSync').and.returnValue(['README.md']);
+            return buildRequire.findXCodeProjectIn(fakePath).then(
+                () => {},
+                (error) => {
+                    expect(error.message).toBe(`No Xcode project found in ${fakePath}`);
+                }
+            );
         });
 
         it('should emit finding multiple Xcode projects', () => {
-            shellLsSpy.and.returnValue(['Test1.xcodeproj', 'Test2.xcodeproj']);
-
-            findXCodeProjectIn(fakePath);
-
-            // Emit
-            let actualEmit = emitSpy.calls.argsFor(0)[1];
-            expect(emitSpy).toHaveBeenCalled();
-            expect(actualEmit).toContain('Found multiple .xcodeproj directories in');
-
-            // Resolve
-            let actualResolve = resolveSpy.calls.argsFor(0)[0];
-            expect(resolveSpy).toHaveBeenCalled();
-            expect(actualResolve).toContain('Test1');
+            spyOn(fs, 'readdirSync').and.returnValue(['Test1.xcodeproj', 'Test2.xcodeproj']);
+            return buildRequire.findXCodeProjectIn(fakePath).then(
+                (projectName) => {
+                    expect(events.emit).toHaveBeenCalledWith(jasmine.any(String), jasmine.stringMatching(/Found multiple .xcodeproj directories in/));
+                    expect(projectName).toBe('Test1');
+                }
+            );
         });
 
         it('should detect and return only one projects', () => {
-            shellLsSpy.and.returnValue(['Test1.xcodeproj']);
-
-            findXCodeProjectIn(fakePath);
-
-            // Emit
-            expect(emitSpy).not.toHaveBeenCalled();
-
-            // Resolve
-            let actualResolve = resolveSpy.calls.argsFor(0)[0];
-            expect(resolveSpy).toHaveBeenCalled();
-            expect(actualResolve).toContain('Test1');
+            spyOn(fs, 'readdirSync').and.returnValue(['Test1.xcodeproj']);
+            return buildRequire.findXCodeProjectIn(fakePath).then(
+                (projectName) => {
+                    expect(events.emit).not.toHaveBeenCalled();
+                    expect(projectName).toBe('Test1');
+                }
+            );
         });
     });
 });
