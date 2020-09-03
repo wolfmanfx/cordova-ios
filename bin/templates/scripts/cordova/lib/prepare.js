@@ -265,11 +265,53 @@ function handleOrientationSettings (platformConfig, infoPlist) {
     }
 }
 
+// Make sure only update properties from our target project
+function updateBuildPropertyLocal (proj, displayName, prop, value, build) {
+    try {
+        // Check if we have a valid target - during prepare we do not have it
+        let target = proj.pbxTargetByName(displayName);
+        if (target == null || target.buildConfigurationList == null) {
+            proj.updateBuildProperty(prop, value, build);
+        } else {
+            let targetProjectBuildReference = target.buildConfigurationList;
+            // Collect the uuid's from the configuration of our target
+            let COMMENT_KEY = /_comment$/;
+            let validConfigs = [];
+            let configList = proj.pbxXCConfigurationList();
+            for (let configName in configList) {
+                if (!COMMENT_KEY.test(configName) && targetProjectBuildReference === configName) {
+                    let buildVariants = configList[configName].buildConfigurations;
+                    for (let i = 0; i < buildVariants.length; i++) {
+                        validConfigs.push(buildVariants[i].value);
+                    }
+                    break;
+                }
+            }
+            // Only update target props
+            let configs = proj.pbxXCBuildConfigurationSection();
+            for (configName in configs) {
+                if (!COMMENT_KEY.test(configName)) {
+                    if (validConfigs.indexOf(configName) === -1) {
+                        continue;
+                    }
+                    let config = configs[configName];
+                    if ((build && config.name === build) || (!build)) {
+                        config.buildSettings[prop] = value;
+                    }
+                }
+            }
+        }
+    } catch (e) { // fallback to default behavior on error
+        proj.updateBuildProperty(prop, value, build);
+    }
+}
+
 function handleBuildSettings (platformConfig, locations, infoPlist) {
     const pkg = platformConfig.getAttribute('ios-CFBundleIdentifier') || platformConfig.packageName();
     const targetDevice = parseTargetDevicePreference(platformConfig.getPreference('target-device', 'ios'));
     const deploymentTarget = platformConfig.getPreference('deployment-target', 'ios');
     const swiftVersion = platformConfig.getPreference('SwiftVersion', 'ios');
+    const displayName = platformConfig.name().replace(/"/g, ''); 
 
     let project;
 
@@ -278,7 +320,6 @@ function handleBuildSettings (platformConfig, locations, infoPlist) {
     } catch (err) {
         return Promise.reject(new CordovaError(`Could not parse ${locations.pbxproj}: ${err}`));
     }
-
     const origPkg = project.xcode.getBuildProperty('PRODUCT_BUNDLE_IDENTIFIER', undefined, platformConfig.name());
 
     // no build settings provided and we don't need to update build settings for launch storyboards,
@@ -289,22 +330,30 @@ function handleBuildSettings (platformConfig, locations, infoPlist) {
 
     if (origPkg !== pkg) {
         events.emit('verbose', `Set PRODUCT_BUNDLE_IDENTIFIER to ${pkg}.`);
-        project.xcode.updateBuildProperty('PRODUCT_BUNDLE_IDENTIFIER', pkg, null, platformConfig.name());
+        updateBuildPropertyLocal(project, displayName, 'PRODUCT_BUNDLE_IDENTIFIER', pkg);
+
+        //project.xcode.updateBuildProperty('PRODUCT_BUNDLE_IDENTIFIER', pkg, null, platformConfig.name());
     }
 
     if (targetDevice) {
         events.emit('verbose', `Set TARGETED_DEVICE_FAMILY to ${targetDevice}.`);
-        project.xcode.updateBuildProperty('TARGETED_DEVICE_FAMILY', targetDevice);
+        updateBuildPropertyLocal(project, displayName, 'TARGETED_DEVICE_FAMILY', targetDevice);
+
+        //project.xcode.updateBuildProperty('TARGETED_DEVICE_FAMILY', targetDevice);
     }
 
     if (deploymentTarget) {
         events.emit('verbose', `Set IPHONEOS_DEPLOYMENT_TARGET to "${deploymentTarget}".`);
-        project.xcode.updateBuildProperty('IPHONEOS_DEPLOYMENT_TARGET', deploymentTarget);
+        updateBuildPropertyLocal(project, displayName, 'IPHONEOS_DEPLOYMENT_TARGET', deploymentTarget);
+
+        //project.xcode.updateBuildProperty('IPHONEOS_DEPLOYMENT_TARGET', deploymentTarget);
     }
 
     if (swiftVersion) {
         events.emit('verbose', `Set SwiftVersion to "${swiftVersion}".`);
-        project.xcode.updateBuildProperty('SWIFT_VERSION', swiftVersion);
+        updateBuildPropertyLocal(proj, displayName, 'SWIFT_VERSION', swiftVersion);
+
+//        project.xcode.updateBuildProperty('SWIFT_VERSION', swiftVersion);
     }
 
     project.write();

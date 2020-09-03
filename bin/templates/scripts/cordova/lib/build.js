@@ -112,7 +112,7 @@ module.exports.run = buildOpts => {
             const buildType = buildOpts.release ? 'release' : 'debug';
             const config = buildConfig.ios[buildType];
             if (config) {
-                ['codeSignIdentity', 'codeSignResourceRules', 'provisioningProfile', 'developmentTeam', 'packageType', 'buildFlag', 'iCloudContainerEnvironment', 'automaticProvisioning'].forEach(
+                ['codeSignIdentity', 'codeSignResourceRules', 'provisioningProfile', 'multipleProvisioningProfiles', 'developmentTeam', 'packageType', 'buildFlag', 'iCloudContainerEnvironment', 'automaticProvisioning'].forEach(
                     key => {
                         buildOpts[key] = buildOpts[key] || config[key];
                     });
@@ -230,8 +230,18 @@ module.exports.run = buildOpts => {
                 exportOptions.teamID = buildOpts.developmentTeam;
             }
 
-            if (buildOpts.provisioningProfile && bundleIdentifier) {
-                exportOptions.provisioningProfiles = { [bundleIdentifier]: String(buildOpts.provisioningProfile) };
+            if ((buildOpts.provisioningProfile || buildOpts.multipleProvisioningProfiles) && bundleIdentifier) {
+                if (buildOpts.multipleProvisioningProfiles) {
+                    exportOptions.provisioningProfiles = {};
+                    for (let i = 0; i < buildOpts.multipleProvisioningProfiles.length; i++) {
+                        exportOptions.provisioningProfiles[buildOpts.multipleProvisioningProfiles[i]['key']] = String(buildOpts.multipleProvisioningProfiles[i]['value']);
+                    }
+                } else {
+                    exportOptions.provisioningProfiles = { [bundleIdentifier]: String(buildOpts.provisioningProfile) };
+                }
+
+            //if (buildOpts.provisioningProfile && bundleIdentifier) {
+            //    exportOptions.provisioningProfiles = { [bundleIdentifier]: String(buildOpts.provisioningProfile) };
                 exportOptions.signingStyle = 'manual';
             }
 
